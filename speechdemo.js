@@ -1,15 +1,22 @@
 'use strict';
 
 var itemsList = [];
+var currentLanguage = -1;
+var languages = [{name:'English', code:'en-US'},
+                 {name:'Spanish (US)', code:'es-US'},
+                 {name:'Spanish (Spain)', code:'es-ES'}];
 
 function onBodyLoad() {
+    /*
   if (location.protocol !== 'https:') {
     let href = location.href.replace('http:', 'https:');
     console.log('redirect to:', href);
     location.replace(href);
     return;
   }
+  */
 
+  changeLanguage();
   if (annyang) {
     annyang.addCallback('error', function (err) {
       console.error('There was an error:', err);
@@ -124,6 +131,9 @@ function addPhrases(phrases) {
     item.parent = phrasesDiv;
     itemsList.push(item);
   }
+  if (phrases.length > 0) {
+    textToSpeech(phrases[0]);
+  }
 }
 
 function addError(message, timeout) {
@@ -139,4 +149,28 @@ function addError(message, timeout) {
   item.element = errorDiv;
   item.parent = errorsDiv;
   itemsList.push(item);
+}
+
+function changeLanguage() {
+  currentLanguage++;
+  if (currentLanguage > languages.length - 1) {
+    currentLanguage = 0;
+  }
+  let language = languages[currentLanguage];
+  let languageButton = document.getElementById('languageButton');
+  languageButton.value = 'Language: ' + language.name;
+  annyang.setLanguage(language.code);
+}
+
+function textToSpeech(phrase) {
+  if ('speechSynthesis' in window) {
+  } else {
+    addError('no support for text to speech', 1000);
+    return;
+  }
+  var message = new SpeechSynthesisUtterance();
+  let language = languages[currentLanguage];
+  message.text = phrase;
+  message.lang = language.code;
+  window.speechSynthesis.speak(message);
 }
