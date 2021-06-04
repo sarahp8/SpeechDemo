@@ -5,6 +5,9 @@ var currentLanguage = -1;
 var languages = [{name:'English', code:'en-US'},
                  {name:'Spanish (US)', code:'es-US'},
                  {name:'Spanish (Spain)', code:'es-ES'}];
+var allowsSpeechRecognition = false;
+var enableSpeechRecognition = true;
+var allowsReadBack = false;
 
 function onBodyLoad() {
     /*
@@ -16,10 +19,17 @@ function onBodyLoad() {
   }
   */
 
-  changeLanguage();
+  initLanguages();
   if (annyang) {
     annyang.addCallback('error', function (err) {
-      console.error('There was an error:', err);
+      if (err.error == 'no-speech') {
+        if (!allowsSpeechRecognition) {
+          return;
+        }
+        console.log(err);
+      } else {
+        console.error('There was an error:', err);
+      }
       addError('Error: ' + err.error, 200);
     });
 
@@ -40,13 +50,14 @@ function onBodyLoad() {
         'Sorry: this demo is only supported in Google Chrome.';
     addError(errorMessage, 2000);
   }
-
+  changeLanguage();
+  switchSpeechRecognition();
+  switchReadBack();
   setInterval(intervalFunc, 30);
 }
 
 function notConnected() {
 }
-
 
 function intervalFunc() {
   let emptyMain = true;
@@ -54,6 +65,12 @@ function intervalFunc() {
   for (let k=0; k<itemsList.length; k++) {
     let item = itemsList[k];
     if (!item.valid) { continue; }
+    if (!allowsSpeechRecognition) {
+      if (item.type == 'phrases') {
+        emptyMain = false;
+        continue;
+      }
+    }
     item.counter++;
     let element = item.element;
     let counter = item.counter;
@@ -105,6 +122,11 @@ function intervalFunc() {
 }
 
 function addPhrases(phrases) {
+  console.log('addPhrases:', phrases);
+  if (!allowsSpeechRecognition) {
+    console.error('addPhrases called when allowsSpeechRecognition is false');
+    return;
+  }
   let mainDiv = document.getElementById('mainDiv');
   let phrasesDiv = document.createElement('div');
   phrasesDiv.className = 'phrases';
@@ -151,18 +173,48 @@ function addError(message, timeout) {
   itemsList.push(item);
 }
 
-function changeLanguage() {
-  currentLanguage++;
-  if (currentLanguage > languages.length - 1) {
-    currentLanguage = 0;
+function initLanguages() {
+  currentLanguage = 0;
+  let languageSelect = document.getElementById('languageSelect');
+  for (let k = 0; k < languages.length; k++) {
+    let language = languages[k];
+    let option = document.createElement('option');
+    option.innerHTML = language.name;
+    option.value = language.code;
+    languageSelect.appendChild(option);
   }
+  languageSelect.selectedIndex = currentLanguage;
+}
+
+function changeLanguage() {
+  let languageSelect = document.getElementById('languageSelect');
+  currentLanguage = languageSelect.selectedIndex;
   let language = languages[currentLanguage];
-  let languageButton = document.getElementById('languageButton');
-  languageButton.value = 'Language: ' + language.name;
   annyang.setLanguage(language.code);
+  console.log('changeLanguage:', currentLanguage, language.name, language.code);
+}
+
+function switchSpeechRecognition() {
+  allowsSpeechRecognition = !allowsSpeechRecognition;
+  resetOnOffDivs();
+  let recognitionButton = document.getElementById('recognitionButton');
+  recognitionButton.value = allowsSpeechRecognition ? 'pause' : 'resume';
+  recognitionButton.style.color = allowsSpeechRecognition ? 'black' : 'red';
+  recognitionButton.style.backgroundColor = allowsSpeechRecognition ? '' : '#ffcccc';
+  recognitionButton.style.borderColor = allowsSpeechRecognition ? '' : '#ffbbbb';
+}
+
+function switchReadBack() {
+  allowsReadBack = !allowsReadBack;
+  let readBackButton = document.getElementById('readBackButton');
+  readBackButton.style.color = allowsReadBack ? '#009900' : '#aaaaaa';
+  readBackButton.style.backgroundColor = allowsReadBack ? '#aaffaa' : '#dddddd';
+  readBackButton.style.borderColor = allowsReadBack ? '#99ff99' : '#dddddd';
 }
 
 function textToSpeech(phrase) {
+  if (!allowsReadBack) { return; }
+  console.log('textToSpeech', phrase);
   if ('speechSynthesis' in window) {
   } else {
     addError('no support for text to speech', 1000);
@@ -172,5 +224,60 @@ function textToSpeech(phrase) {
   let language = languages[currentLanguage];
   message.text = phrase;
   message.lang = language.code;
+  message.onstart = function(event) { onSpeakStart(event); }
+  message.onend = function(event) { onSpeakEnd(); }
+  message.onerror = function(event) { onSpeakError(event); }
+  resumeSpeechRecognition(false);
+  setTimeout(onSpeakEnd, 20000); //force enable after 20 seconds
+  showReadBackBox('reading back: ' + phrase);
   window.speechSynthesis.speak(message);
+}
+
+function onSpeakStart(event) {
+  console.log('onSpeakStart', event.utterance.text);
+  showReadBackBox('reading back: ' + event.utterance.text);
+  resumeSpeechRecognition(false);
+}
+
+function onSpeakEnd() {
+  console.log('onSpeakEnd');
+  showReadBackBox('');
+  resumeSpeechRecognition(true);
+}
+
+function onSpeakError(err) {
+  console.error('onSpeakError', err);
+  addError('SpeakError: ' + err.error, 500);
+  onSpeakEnd();
+}
+
+function showReadBackBox(message) {
+  let readBackDiv = document.getElementById('readBackDiv');
+  readBackDiv.innerText = message;
+  readBackDiv.style.display = (message != '') ? 'inline-block' : 'none';
+  console.log((message != ''), message);
+}
+
+function resumeSpeechRecognition(enabled) {
+  console.log('resumeSpeechRecognition:', enabled);
+  if (enableSpeechRecognition == enabled) { return; }
+  enableSpeechRecognition = enabled;
+  resetOnOffDivs();
+}
+
+function resetOnOffDivs() {
+  let enabled = allowsSpeechRecognition && enableSpeechRecognition;
+  let onDiv = document.getElementById('onDiv');
+  let offDiv = document.getElementById('offDiv');
+  onDiv.style.backgroundColor = enabled ? 'green' : 'lightgray';
+  offDiv.style.backgroundColor = enabled ? 'red' : 'lightgray';
+  console.log('----', enabled);
+  if (annyang.isListening() == enabled) {
+    return;
+  }
+  if (enabled) {
+    annyang.resume();
+  } else {
+    annyang.pause();
+  }
 }

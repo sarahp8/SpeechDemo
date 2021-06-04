@@ -8,24 +8,48 @@
     border-radius: 16px;
 }
 
-#languageDiv
+#settingsDiv
 {
     border: none;
-    background-color: cornsilk;
+    background-color: #f4f0e4;
     display: inline-block;
     margin: 5px 20px 5px 20px;
     padding: 2px;
     border-radius: 10px;
 }
 
-#languageButton
+#languageSelect
 {
+    color: black;
     background-color: white;
     margin: 5px 9px 5px 9px;
-    padding: 3px 10px 3px 10px;
+    padding: 2px 5px 2px 5px;
+    border: 1px solid gray;
+    border-radius: 7px;
+}
+
+#recognitionButton
+{
+    float: left;
+    width: content-box;
+    min-width:70px;
+    margin: 5px 9px 5px 9px;
+    padding: 2px 5px 2px 5px;
+    border: 1px solid #bbbbbb;
+    border-radius: 7px;
+    background-color: #f9f9f9;
+}
+
+#readBackButton
+{
+    float: right;
+    width: content-box;
+    color: green;
+    background-color: white;
+    margin: 5px 9px 5px 9px;
+    padding: 2px 5px 2px 5px;
     border: 1px solid brown;
-    border-radius: 10px;
-    color: brown;
+    border-radius: 7px;
 }
 
 #onDiv
@@ -46,6 +70,19 @@
     display: inline-block;
     margin: 2px;
     padding: 5px 9px 5px 9px;
+    border-radius: 10px;
+    color: white;
+}
+
+#readBackDiv
+{
+    border: none;
+    background-color: lightskyblue;
+    display: inline-block;
+    width: fit-content;
+    margin: 2px;
+    padding: 5px 9px 5px 9px;
+    border: 2px dotted #3333ff;
     border-radius: 10px;
     color: white;
 }
