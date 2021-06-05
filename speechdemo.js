@@ -27,6 +27,12 @@ function onBodyLoad() {
           return;
         }
         console.log(err);
+      } else if (err.error == 'aborted') {
+        if (!allowSpeechRecognition) {
+          return;
+        }
+        console.warn(err);
+        return;
       } else {
         console.error('There was an error:', err);
       }
@@ -246,7 +252,7 @@ function onSpeakEnd() {
   console.log('onSpeakEnd');
   //showReadBackBox('');
   //resumeSpeechRecognition(true);
-  setTimeout(function(){ showReadBackBox(''); resumeSpeechRecognition(true); }, 2000);
+  setTimeout(function(){ showReadBackBox(''); resumeSpeechRecognition(true); }, 200);
 }
 
 function onSpeakError(err) {
@@ -279,9 +285,14 @@ function resetOnOffDivs() {
   if (annyang.isListening() == enabled) {
     return;
   }
-  if (enabled) {
-    annyang.resume();
-  } else {
-    annyang.pause();
+  try {
+    if (enabled) {
+      //annyang.resume();
+      annyang.start({autoRestart: true, continuous: false});
+    } else {
+      //annyang.pause();
+      annyang.abort();
+    }
+  } catch (err) {
   }
 }
