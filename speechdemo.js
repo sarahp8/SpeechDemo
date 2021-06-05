@@ -198,7 +198,9 @@ function changeLanguage() {
   let languageSelect = document.getElementById('languageSelect');
   currentLanguage = languageSelect.selectedIndex;
   let language = languages[currentLanguage];
+  enableAnnyang(false);
   annyang.setLanguage(language.code);
+  enableAnnyang(true);
   console.log('changeLanguage:', currentLanguage, language.name, language.code);
 }
 
@@ -276,23 +278,26 @@ function resumeSpeechRecognition(enabled) {
 }
 
 function resetOnOffDivs() {
-  let enabled = allowSpeechRecognition && enableSpeechRecognition;
+  let enable = allowSpeechRecognition && enableSpeechRecognition;
   let onDiv = document.getElementById('onDiv');
   let offDiv = document.getElementById('offDiv');
-  onDiv.style.backgroundColor = enabled ? 'green' : 'lightgray';
-  offDiv.style.backgroundColor = enabled ? 'red' : 'lightgray';
-  console.log('----', enabled);
-  if (annyang.isListening() == enabled) {
-    return;
+  onDiv.style.backgroundColor = enable ? 'green' : 'lightgray';
+  offDiv.style.backgroundColor = enable ? 'red' : 'lightgray';
+  console.log('----', enable);
+  if (annyang.isListening() == enable) {
+    //return;
   }
+  enableAnnyang(enable);
+}
+
+function enableAnnyang(enable) {
   try {
-    if (enabled) {
-      //annyang.resume();
+    if (enable) {
       annyang.start({autoRestart: true, continuous: false});
     } else {
-      //annyang.pause();
       annyang.abort();
     }
   } catch (err) {
   }
 }
+
