@@ -4,10 +4,15 @@ var itemsList = [];
 var currentLanguage = -1;
 var languages = [{name:'English', code:'en-US'},
                  {name:'Spanish (US)', code:'es-US'},
-                 {name:'Spanish (Spain)', code:'es-ES'}];
+                 {name:'Spanish (Spain)', code:'es-ES'},
+                 {name:'Mandarin Chinese', code:'zh', readBackCode:'cmn-CN', css:'chinese.css', cssLinked:false, fontFamily:'zCoolXiaoWei'},
+                 {name:'French (France)', code:'fr-FR'},
+                 {name:'German (Germany)', code:'de-DE'},
+                 {name:'Italian (Italy)', code:'it-IT'}];
 var allowSpeechRecognition = false;
 var enableSpeechRecognition = false;
 var allowReadBack = false;
+var textFontFamily = '';
 
 function onBodyLoad() {
     /*
@@ -152,6 +157,9 @@ function addPhrases(phrases) {
     phraseDiv.className = 'phrase';
     phraseDiv.innerText = str;
     phraseDiv.style.display = 'none';
+    if (!isEmptyString(textFontFamily)) {
+      phraseDiv.style.fontFamily = textFontFamily;
+    }
     phrasesDiv.appendChild(phraseDiv);
     let item = {};
     item.counter = -k*5 - 1;
@@ -201,7 +209,19 @@ function changeLanguage() {
   enableAnnyang(false);
   annyang.setLanguage(language.code);
   enableAnnyang(true);
-  console.log('changeLanguage:', currentLanguage, language.name, language.code);
+  if (!isEmptyString(language.css)) {
+    if (!language.cssLinked) {
+      addCSS(language.css);
+      language.cssLinked = true;
+    }
+  }
+  textFontFamily = '';
+  if (!isEmptyString(language.fontFamily)) {
+    textFontFamily = language.fontFamily;
+  }
+  let tempDiv = document.getElementById('tempDiv');
+  tempDiv.style.fontFamily = textFontFamily;
+  console.log('changeLanguage:', currentLanguage, language.name, language.code, textFontFamily);
 }
 
 function switchSpeechRecognition() {
@@ -232,8 +252,12 @@ function textToSpeech(phrase) {
   }
   var message = new SpeechSynthesisUtterance();
   let language = languages[currentLanguage];
+  let code = language.readBackCode;
+  if (isEmptyString(code)) {
+    code = language.code;
+  }
   message.text = phrase;
-  message.lang = language.code;
+  message.lang = code;
   message.onstart = function(event) { onSpeakStart(event); }
   message.onend = function(event) { onSpeakEnd(); }
   message.onerror = function(event) { onSpeakError(event); }
@@ -266,6 +290,7 @@ function onSpeakError(err) {
 function showReadBackBox(message) {
   let readBackDiv = document.getElementById('readBackDiv');
   readBackDiv.innerHTML = message;
+  readBackDiv.style.fontFamily = textFontFamily;
   readBackDiv.style.display = (message != '') ? 'inline-block' : 'none';
   console.log((message != ''), message);
 }
@@ -297,7 +322,21 @@ function enableAnnyang(enable) {
     } else {
       annyang.abort();
     }
-  } catch (err) {
-  }
+  } catch (err) {}
 }
+
+function addCSS(fileName) {
+  let link = document.createElement('link');
+  link.type = 'text/css';
+  link.rel = 'stylesheet';
+  link.href = fileName;
+  document.head.appendChild(link);
+  console.log('addCSS', fileName);
+}
+
+function isEmptyString(text) {
+  let empty = (text == null) || (text == undefined) || (text == '');
+  return empty;
+}
+
 
