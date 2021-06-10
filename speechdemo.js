@@ -2,27 +2,37 @@
 
 var itemsList = [];
 var currentLanguage = -1;
-var languages = [{name:'English', code:'en-US'},
+var languages = [
+                 {name:'English (US)', code:'en-US'},
+                 {name:'English (UK)', code:'en-Gb'},
                  {name:'Spanish (US)', code:'es-US'},
                  {name:'Spanish (Spain)', code:'es-ES'},
-                 {name:'Mandarin Chinese', code:'zh', readBackCode:'cmn-CN', css:'chinese.css', cssLinked:false, fontFamily:'zCoolXiaoWei'},
                  {name:'French (France)', code:'fr-FR'},
                  {name:'German (Germany)', code:'de-DE'},
-                 {name:'Italian (Italy)', code:'it-IT'}];
+                 {name:'Italian (Italy)', code:'it-IT'},
+                 {name:'Chinese (Mandarin)', code:'zh', readBackCode:'zh-CN', 
+			 css:'chinese.css', cssLinked:false, fontFamily:'zCoolXiaoWei'}
+                ];
 var allowSpeechRecognition = false;
 var enableSpeechRecognition = false;
 var allowReadBack = false;
 var textFontFamily = '';
 
 function onBodyLoad() {
-    /*
+  let canUseBrowser = isChrome();
+  if ( (!('SpeechRecognition' in window)) && (!('webkitSpeechRecognition' in window)) ) {
+    canUseBrowser = false;
+  }
+  if (!canUseBrowser) {
+    alert('Web Speech API is not supported by this browser. Please use Chrome version 25 or later.');
+  }
+
   if (location.protocol !== 'https:') {
     let href = location.href.replace('http:', 'https:');
     console.log('redirect to:', href);
     location.replace(href);
     return;
   }
-  */
 
   initLanguages();
   if (annyang) {
@@ -252,8 +262,10 @@ function textToSpeech(phrase) {
   }
   var message = new SpeechSynthesisUtterance();
   let language = languages[currentLanguage];
-  let code = language.readBackCode;
-  if (isEmptyString(code)) {
+  let code;
+  if (! isEmptyString(language.readBackCode)) {
+    code = language.readBackCode;
+  } else {
     code = language.code;
   }
   message.text = phrase;
@@ -339,4 +351,26 @@ function isEmptyString(text) {
   return empty;
 }
 
+function isChrome() {
+  var isChromium = window.chrome;
+  var winNav = window.navigator;
+  var vendorName = winNav.vendor;
+  var isOpera = typeof window.opr !== "undefined";
+  var isIEedge = winNav.userAgent.indexOf("Edge") > -1;
+  var isIOSChrome = winNav.userAgent.match("CriOS");
 
+  if (isIOSChrome) {
+    // is Google Chrome on IOS
+    return false;
+  } else if(
+    isChromium !== null &&
+    typeof isChromium !== "undefined" &&
+    vendorName === "Google Inc." &&
+    isOpera === false &&
+    isIEedge === false
+  ) {
+    // is Google Chrome
+    return true;
+  }
+  return false;
+}
