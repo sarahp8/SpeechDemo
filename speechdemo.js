@@ -11,11 +11,14 @@ var languages = [
                  {name:'German (Germany)', code:'de-DE'},
                  {name:'Italian (Italy)', code:'it-IT'},
                  {name:'Chinese (Mandarin)', code:'zh', readBackCode:'zh-CN', 
-			 css:'chinese.css', cssLinked:false, fontFamily:'zCoolXiaoWei'}
+           			  css:'chinese.css', cssLinked:false, fontFamily:'zCoolXiaoWei'},
+                 {name:'Arabic (Saudi Arabia)', code:'ar-SA', readBackCode:'ar-SA',
+           			  css:'arabic.css', cssLinked:false, fontFamily:'Almarai', rightToLeft:true}
                 ];
 var allowSpeechRecognition = false;
 var enableSpeechRecognition = false;
 var allowReadBack = false;
+var isRightToLeft = false;
 var textFontFamily = '';
 
 function onBodyLoad() {
@@ -72,6 +75,14 @@ function onBodyLoad() {
         'Sorry: this demo is only supported in Google Chrome.';
     addError(errorMessage, 2000);
   }
+  try
+  {
+    window.speechSynthesis.onvoiceschanged = function () {
+      var voices = this.getVoices();
+      console.log(voices);
+    }
+  }
+  catch(err) {}
   changeLanguage();
   enableSpeechRecognition = true;
   allowReadBack = true;
@@ -129,6 +140,9 @@ function intervalFunc() {
 
   let emptyMessageDiv = document.getElementById('emptyMessageDiv');
   emptyMessageDiv.style.display = emptyMain ? 'block' : 'none';
+  if (isRightToLeft) {
+    emptyMessageDiv.style.float = 'right';
+  }
 
   let errorsDiv = document.getElementById('errorsDiv');
   errorsDiv.style.display = emptyErrors ? 'none' : 'inline-block';
@@ -154,6 +168,7 @@ function addPhrases(phrases) {
   let mainDiv = document.getElementById('mainDiv');
   let phrasesDiv = document.createElement('div');
   phrasesDiv.className = 'phrases';
+  if (isRightToLeft) { phrasesDiv.style.float = 'right'; }
   mainDiv.appendChild(phrasesDiv);
   let item = {};
   item.counter = 0;
@@ -230,6 +245,7 @@ function changeLanguage() {
   if (!isEmptyString(language.fontFamily)) {
     textFontFamily = language.fontFamily;
   }
+  isRightToLeft = (language.rightToLeft == true);
   let tempDiv = document.getElementById('tempDiv');
   tempDiv.style.fontFamily = textFontFamily;
   console.log('changeLanguage:', currentLanguage, language.name, language.code, textFontFamily);
