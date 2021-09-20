@@ -168,7 +168,10 @@ function addPhrases(phrases) {
   let mainDiv = document.getElementById('mainDiv');
   let phrasesDiv = document.createElement('div');
   phrasesDiv.className = 'phrases';
-  if (isRightToLeft) { phrasesDiv.style.float = 'right'; }
+  if (isRightToLeft) {
+    phrasesDiv.style.float = 'right';
+    phrasesDiv.style.direction = 'rtl';
+  }
   mainDiv.appendChild(phrasesDiv);
   let item = {};
   item.counter = 0;
