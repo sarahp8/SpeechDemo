@@ -13,7 +13,7 @@ var languages = [
                  {name:'Chinese (Mandarin)', code:'zh', readBackCode:'zh-CN', 
            			  css:'chinese.css', cssLinked:false, fontFamily:'zCoolXiaoWei'},
                  {name:'Arabic (Saudi Arabia)', code:'ar-SA', readBackCode:'ar-SA',
-           			  css:'arabic.css', cssLinked:false, fontFamily:'Almarai', rightToLeft:true}
+           			  css:'arabic.css', cssLinked:false, fontFamily:'Almarai', rightToLeft:true, useCloud:true}
                 ];
 var allowSpeechRecognition = false;
 var enableSpeechRecognition = false;
@@ -275,12 +275,6 @@ function switchReadBack() {
 function textToSpeech(phrase) {
   if (!allowReadBack) { return; }
   console.log('textToSpeech', phrase);
-  if ('speechSynthesis' in window) {
-  } else {
-    addError('no support for text to speech', 1000);
-    return;
-  }
-  var message = new SpeechSynthesisUtterance();
   let language = languages[currentLanguage];
   let code;
   if (! isEmptyString(language.readBackCode)) {
@@ -288,13 +282,23 @@ function textToSpeech(phrase) {
   } else {
     code = language.code;
   }
+  if (language.useCloud) {
+    cloudTextToSpeech(phrase, code, 'FEMALE');
+    return;
+  }
+  if ('speechSynthesis' in window) {
+  } else {
+    addError('no support for text to speech', 1000);
+    return;
+  }
+  let message = new SpeechSynthesisUtterance();
   message.text = phrase;
   message.lang = code;
   message.onstart = function(event) { onSpeakStart(event); }
   message.onend = function(event) { onSpeakEnd(); }
   message.onerror = function(event) { onSpeakError(event); }
   resumeSpeechRecognition(false);
-  setTimeout(onSpeakEnd, 20000); //force enable after 20 seconds
+  //setTimeout(onSpeakEnd, 20000); //force enable after 20 seconds
   showReadBackBox('reading back: <span class="readBack">' + phrase + '</span>');
   window.speechSynthesis.speak(message);
 }
@@ -416,3 +420,87 @@ async function extraChromeCheck() {
 function alertForChrome() {
   alert('Web Speech API is not supported by this browser. Please use Chrome version 25 or later.');
 }
+
+function cloudTextToSpeech(phrase, langCode, gender) {
+  let cloudAPIKey = 'AIzaSyBfeZeLbYvF6BN9n_OluPA2csv6TKgjIHs';
+  let url = 'https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=' + cloudAPIKey;
+  let data = {
+    'input':{
+      'text': phrase
+    },
+    'voice':{
+      'languageCode':langCode,
+      'ssmlGender':gender
+    },
+    'audioConfig':{
+      'audioEncoding':'OGG_OPUS'
+    }
+  };
+  let xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange=function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+      onCloudResponse(phrase, xhttp.responseText);
+    }
+  };
+  try {
+    xhttp.open('POST', url, true);
+    xhttp.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+    xhttp.send(JSON.stringify(data));
+  } catch(err) {
+    console.error(err);
+    onCloudError('server error');
+    return;
+  }
+}
+
+function onCloudResponse(phrase, responseText){
+  let responseObject = JSON.parse(responseText);
+  let arrayBuffer = stringToArrayBuffer(responseObject.audioContent);
+  if(arrayBuffer.byteLength == 0) {
+    onCloudError('server error0');
+    return;
+  }
+  let allAudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext;
+  try {
+    let audioContext = new allAudioContext();
+    audioContext.decodeAudioData(arrayBuffer, function(buffer){
+        audioContext.resume();
+        let audioSource = audioContext.createBufferSource();
+        audioSource.connect(audioContext.destination);
+        audioSource.addEventListener('ended', onSpeakEnd);
+        audioSource.buffer = buffer;
+        audioSource.start(0);
+      },
+      function(){
+        onCloudError('decode error');
+      });
+  }
+  catch(err) {
+    console.error(err);
+    onCloudError('play error');
+    return;
+  }
+  let event = {};
+  event.utterance = {};
+  event.utterance.text = phrase;
+  onSpeakStart(event);
+  resumeSpeechRecognition(false);
+  setTimeout(onSpeakEnd, 20000); //force enable after 20 seconds
+  showReadBackBox('reading back: <span class="readBack">' + phrase + '</span>');
+}
+
+function onCloudError(err) {
+  onSpeakError(err);
+  console.error(err);
+}
+
+function stringToArrayBuffer(base64Str) {
+  let dataStr = window.atob(base64Str);
+  let arrayBuffer = new ArrayBuffer(dataStr.length);
+  let bufferView = new Uint8Array(arrayBuffer);
+  for (let k=0; k<dataStr.length; k++) {
+    bufferView[k] = dataStr.charCodeAt(k);
+  }
+  return arrayBuffer;
+}
+
