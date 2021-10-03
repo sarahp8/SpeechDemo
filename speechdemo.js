@@ -267,9 +267,10 @@ function switchSpeechRecognition() {
 function switchReadBack() {
   allowReadBack = !allowReadBack;
   let readBackButton = document.getElementById('readBackButton');
-  readBackButton.style.color = allowReadBack ? '#009900' : '#aaaaaa';
-  readBackButton.style.backgroundColor = allowReadBack ? '#aaffaa' : '#dddddd';
-  readBackButton.style.borderColor = allowReadBack ? '#99ff99' : '#dddddd';
+  readBackButton.value = allowReadBack ? 'silence' : 'read back';
+  readBackButton.style.color = allowReadBack ? '#009900' : '#000000';
+  readBackButton.style.backgroundColor = allowReadBack ? '#aaffaa' : '#f9f9f9';
+  readBackButton.style.borderColor = allowReadBack ? '#99ff99' : '#bbbbbb';
 }
 
 function textToSpeech(phrase) {
